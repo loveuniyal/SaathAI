@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://saathai.onrender.com'
+
 const languages = [
   { code: 'hi-IN', label: 'हिंदी', name: 'Hindi' },
   { code: 'ta-IN', label: 'தமிழ்', name: 'Tamil' },
@@ -12,7 +14,7 @@ const languages = [
   { code: 'en-IN', label: 'English', name: 'English' },
 ]
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://saathai.onrender.com'
+
 
 const SYSTEM_PROMPT = `You are SaathAI, a helpful AI assistant for rural and underprivileged Indians. 
 Your job is to help people understand:
