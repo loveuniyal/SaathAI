@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://saathai.onrender.com'
+
 const rights = [
   {
     icon: '🗣️',
@@ -65,7 +67,7 @@ export default function Legal() {
     setAnswer(null)
 
     try {
-      const res = await fetch('http://localhost:5000/api/chat', {
+      const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

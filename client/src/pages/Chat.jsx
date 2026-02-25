@@ -12,7 +12,7 @@ const languages = [
   { code: 'en-IN', label: 'English', name: 'English' },
 ]
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://saathai.onrender.com'
 
 const SYSTEM_PROMPT = `You are SaathAI, a helpful AI assistant for rural and underprivileged Indians. 
 Your job is to help people understand:
@@ -68,7 +68,7 @@ const startListening = async () => {
       formData.append('language', selectedLang.code.split('-')[0])
 
       try {
-        const res = await fetch('http://localhost:5000/api/transcribe', {
+        const res = await fetch(`${API_BASE_URL}/api/transcribe`, {
           method: 'POST',
           body: formData,
         })
@@ -152,7 +152,7 @@ const stopListening = () => {
         parts: [{ text: m.text }],
       }))
 
-      const response = await fetch('http://localhost:5000/api/chat', {
+      const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -9,6 +9,14 @@ app.use(express.json())
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
+app.get('/', (req, res) => {
+  res.json({ 
+    status: '✅ SaathAI Backend is running!',
+    endpoints: ['/api/chat', '/api/transcribe'],
+    timestamp: new Date().toISOString()
+  })
+})
+
 app.post('/api/chat', async (req, res) => {
   try {
     const { messages, systemPrompt } = req.body
@@ -59,4 +67,5 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
   }
 })
 
-app.listen(5000, () => console.log('✅ Server running on port 5000'))
+const PORT = process.env.PORT || 5000
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`))
