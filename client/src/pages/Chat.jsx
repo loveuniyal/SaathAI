@@ -144,7 +144,8 @@ Help users understand:
 3. Legal rights
 
 Keep answers simple and friendly. Never use complex jargon.`
- console.log('selected lang',selectedLang.name)
+ 
+alert('selected lang',selectedLang.name)
     const userMsg = { role: 'user', text }
     setMessages((prev) => [...prev, userMsg])
     setInput('')
