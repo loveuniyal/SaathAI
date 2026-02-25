@@ -1,0 +1,15 @@
+# Environment files
+server/.env
+client/.env
+.env
+
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build
+client/dist/
+
+# Temp files
+server/temp_audio.webm
