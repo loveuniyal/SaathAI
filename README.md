@@ -202,15 +202,11 @@ User hears the answer in their own language 🎉
 
 | Name | Role |
 |---|---|
-| [Your Name] | Product & Communication Lead |
+| LOVE UNIYAL | Product & Communication Lead |
 
 ---
 
-## 📄 License
 
-MIT License — see [LICENSE](LICENSE) for details.
-
----
 
 ## 🙏 Acknowledgements
 
