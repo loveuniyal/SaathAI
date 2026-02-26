@@ -145,7 +145,7 @@ Help users understand:
 
 Keep answers simple and friendly. Never use complex jargon.`
  
-alert('selected lang',selectedLang.name)
+console.log('selected lang',selectedLang.name)
     const userMsg = { role: 'user', text }
     setMessages((prev) => [...prev, userMsg])
     setInput('')
