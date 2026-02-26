@@ -162,7 +162,7 @@ alert('selected lang',selectedLang.name)
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           systemPrompt: SYSTEM_PROMPT,
-          messages: [...history, { role: 'user', parts: [{ text }] }],
+          messages: [...history, { role: 'user', parts: [{ text: `[IMPORTANT: Reply only in ${selectedLang.name} language. Do not use any other language.] ${text}` }] }],
         }),
       })
 
