@@ -51,16 +51,15 @@ app.post('/api/chat', async (req, res) => {
       body: JSON.stringify({
         model: 'sarvam-m',
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: systemPrompt || 'You are SaathAI, a helpful assistant for Indian citizens.' },
           ...formatted,
         ],
-        max_tokens: 1024,
-        temperature: 0.2,
       }),
     })
 
     const data = await response.json()
-    console.log('Sarvam chat status:', response.status, 'reply length:', data.choices?.[0]?.message?.content?.length)
+    console.log('Sarvam chat status:', response.status, 'msgs:', formatted.length, 'reply length:', data.choices?.[0]?.message?.content?.length)
+    if (!response.ok) console.error('Sarvam error body:', JSON.stringify(data))
     const reply = data.choices?.[0]?.message?.content || 'माफ़ कीजिए, दोबारा पूछें।'
     res.json({ reply })
   } catch (err) {
