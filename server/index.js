@@ -14,6 +14,16 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 const SARVAM_API_KEY = process.env.SARVAM_API_KEY
 const SARVAM_BASE = 'https://api.sarvam.ai'
 
+console.log('SARVAM_API_KEY loaded:', !!SARVAM_API_KEY)
+
+// Helper: fetch with timeout
+const fetchWithTimeout = (url, options, ms = 15000) => {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), ms)
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timer))
+}
+
 app.get('/', (req, res) => {
   res.json({ 
     status: '✅ SaathAI Backend is running!',
@@ -32,7 +42,7 @@ app.post('/api/chat', async (req, res) => {
       content: m.parts?.[0]?.text || m.content || '',
     }))
 
-    const response = await fetch(`${SARVAM_BASE}/v1/chat/completions`, {
+    const response = await fetchWithTimeout(`${SARVAM_BASE}/v1/chat/completions`, {
       method: 'POST',
       headers: {
         'api-subscription-key': SARVAM_API_KEY,
@@ -50,10 +60,11 @@ app.post('/api/chat', async (req, res) => {
     })
 
     const data = await response.json()
+    console.log('Sarvam chat status:', response.status, 'reply length:', data.choices?.[0]?.message?.content?.length)
     const reply = data.choices?.[0]?.message?.content || 'माफ़ कीजिए, दोबारा पूछें।'
     res.json({ reply })
   } catch (err) {
-    console.error(err)
+    console.error('Chat error:', err.message)
     res.status(500).json({ error: err.message })
   }
 })
@@ -102,7 +113,7 @@ app.post('/api/tts', async (req, res) => {
       .trim()
       .slice(0, 2400)
 
-    const response = await fetch(`${SARVAM_BASE}/text-to-speech`, {
+    const response = await fetchWithTimeout(`${SARVAM_BASE}/text-to-speech`, {
       method: 'POST',
       headers: {
         'api-subscription-key': SARVAM_API_KEY,
