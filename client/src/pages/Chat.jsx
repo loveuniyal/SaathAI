@@ -77,7 +77,7 @@ const startListening = async () => {
       setListening(false)
     }
 
-    mediaRecorder.start()
+    mediaRecorder.start(100) // collect data every 100ms to avoid race condition
     setListening(true)
   } catch (err) {
     console.error('Mic error:', err)
