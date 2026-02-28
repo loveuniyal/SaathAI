@@ -31,11 +31,14 @@ export default function Chat() {
   const [loading, setLoading] = useState(false)
   const [selectedLang, setSelectedLang] = useState(languages[0])
   const [speaking, setSpeaking] = useState(false)
+  const [recordingDuration, setRecordingDuration] = useState(0)
   const bottomRef = useRef(null)
   const recognitionRef = useRef(null)
   const mediaRecorderRef = useRef(null)
 const audioChunksRef = useRef([])
 const audioRef = useRef(null)
+const recordingStartRef = useRef(null)
+const durationTimerRef = useRef(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -49,12 +52,28 @@ const startListening = async () => {
     const mediaRecorder = new MediaRecorder(stream)
     mediaRecorderRef.current = mediaRecorder
     audioChunksRef.current = []
+    setRecordingDuration(0)
+    recordingStartRef.current = Date.now()
+    durationTimerRef.current = setInterval(() => {
+      setRecordingDuration(Math.floor((Date.now() - recordingStartRef.current) / 1000))
+    }, 1000)
 
     mediaRecorder.ondataavailable = (e) => {
       if (e.data.size > 0) audioChunksRef.current.push(e.data)
     }
 
     mediaRecorder.onstop = async () => {
+      clearInterval(durationTimerRef.current)
+      const duration = Date.now() - recordingStartRef.current
+
+      // Discard recordings shorter than 1.5 seconds — prevents Whisper hallucinations
+      if (duration < 1500) {
+        stream.getTracks().forEach(track => track.stop())
+        setListening(false)
+        setRecordingDuration(0)
+        return
+      }
+
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
       const formData = new FormData()
       formData.append('audio', audioBlob, 'audio.webm')
@@ -75,6 +94,7 @@ const startListening = async () => {
       
       stream.getTracks().forEach(track => track.stop())
       setListening(false)
+      setRecordingDuration(0)
     }
 
     mediaRecorder.start(100) // collect data every 100ms to avoid race condition
@@ -86,6 +106,7 @@ const startListening = async () => {
 }
 
 const stopListening = () => {
+  clearInterval(durationTimerRef.current)
   mediaRecorderRef.current?.stop()
 }
 
@@ -308,7 +329,7 @@ console.log('selected lang',selectedLang.name)
 
         {listening && (
           <p className="text-center text-red-400 text-xs mt-2 animate-pulse">
-            🔴 Listening... speak now in {selectedLang.name}
+            🔴 Listening... {recordingDuration}s — speak now in {selectedLang.name} (hold for at least 2s)
           </p>
         )}
       </div>

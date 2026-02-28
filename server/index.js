@@ -75,7 +75,15 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
     })
 
     fs.unlinkSync(tempPath)
-    res.json({ transcript: transcription.text })
+
+    // Filter known Whisper hallucinations for short/silent audio
+    const hallucinations = ['you', 'you.', 'thank you', 'thank you.', 'thanks', 'bye', 'bye.', 'yes', 'no']
+    const transcript = transcription.text?.trim() || ''
+    if (!transcript || hallucinations.includes(transcript.toLowerCase())) {
+      return res.json({ transcript: '' })
+    }
+
+    res.json({ transcript })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: err.message })
