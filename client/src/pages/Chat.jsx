@@ -31,6 +31,7 @@ export default function Chat() {
   const [loading, setLoading] = useState(false)
   const [selectedLang, setSelectedLang] = useState(languages[0])
   const [speaking, setSpeaking] = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
   const bottomRef = useRef(null)
   const recognitionRef = useRef(null)
@@ -79,6 +80,11 @@ const startListening = async () => {
       formData.append('audio', audioBlob, 'audio.webm')
       formData.append('language', selectedLang.code.split('-')[0])
 
+      stream.getTracks().forEach(track => track.stop())
+      setListening(false)
+      setRecordingDuration(0)
+      setTranscribing(true)
+
       try {
         const res = await fetch(`${API_BASE_URL}/api/transcribe`, {
           method: 'POST',
@@ -86,15 +92,17 @@ const startListening = async () => {
         })
         const data = await res.json()
         if (data.transcript) {
-          setInput(data.transcript)
+          // Auto-send immediately after transcription
+          sendMessage(data.transcript)
+        } else {
+          setMessages(prev => [...prev, { role: 'assistant', text: '⚠️ आवाज़ नहीं सुन पाया। कृपया फिर से बोलें।' }])
         }
       } catch (err) {
         console.error('Transcription error:', err)
+        setMessages(prev => [...prev, { role: 'assistant', text: '⚠️ Transcription failed. Please try again.' }])
+      } finally {
+        setTranscribing(false)
       }
-      
-      stream.getTracks().forEach(track => track.stop())
-      setListening(false)
-      setRecordingDuration(0)
     }
 
     mediaRecorder.start(100) // collect data every 100ms to avoid race condition
@@ -329,7 +337,12 @@ console.log('selected lang',selectedLang.name)
 
         {listening && (
           <p className="text-center text-red-400 text-xs mt-2 animate-pulse">
-            🔴 Listening... {recordingDuration}s — speak now in {selectedLang.name} (hold for at least 2s)
+            🔴 Recording... {recordingDuration}s — speak in {selectedLang.name}, then press ⏹️ to stop
+          </p>
+        )}
+        {transcribing && (
+          <p className="text-center text-orange-400 text-xs mt-2 animate-pulse">
+            ⏳ Transcribing your voice...
           </p>
         )}
       </div>
