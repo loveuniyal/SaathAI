@@ -35,6 +35,7 @@ export default function Chat() {
   const recognitionRef = useRef(null)
   const mediaRecorderRef = useRef(null)
 const audioChunksRef = useRef([])
+const audioRef = useRef(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -88,44 +89,37 @@ const stopListening = () => {
   mediaRecorderRef.current?.stop()
 }
 
-  // Text to Speech
-  const speak = (text) => {
-  if (!window.speechSynthesis) return
-  window.speechSynthesis.cancel()
-
-  // Clean text for TTS
-  const cleaned = text
-    .replace(/\*/g, '')
-    .replace(/#{1,6}\s/g, '')
-    .trim()
-
-  // Split into small chunks at sentence boundaries
-  const chunks = cleaned.split(/(?<=[।.!?])\s+/)
-
-  let index = 0
-  const speakNext = () => {
-    if (index >= chunks.length) {
-      setSpeaking(false)
-      return
-    }
-    const utterance = new SpeechSynthesisUtterance(chunks[index])
-    utterance.lang = selectedLang.code
-    utterance.rate = 0.85
-    utterance.pitch = 1
-    utterance.volume = 1
-    utterance.onend = () => {
-      index++
-      speakNext()
-    }
-    utterance.onerror = () => {
-      index++
-      speakNext()
-    }
-    if (index === 0) setSpeaking(true)
-    window.speechSynthesis.speak(utterance)
+  // Text to Speech — Sarvam Bulbul v3 (natural Indian language voices)
+  const speak = async (text) => {
+  // Stop any currently playing audio
+  if (audioRef.current) {
+    audioRef.current.pause()
+    audioRef.current = null
   }
 
-  speakNext()
+  setSpeaking(true)
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text,
+        language_code: selectedLang.code,
+      }),
+    })
+    const data = await res.json()
+    if (!data.audio) { setSpeaking(false); return }
+
+    // Play base64 WAV directly via data URL — avoids atob decode issues
+    const audio = new Audio(`data:audio/wav;base64,${data.audio}`)
+    audioRef.current = audio
+    audio.onended = () => { setSpeaking(false) }
+    audio.onerror = (e) => { console.error('audio play error', e); setSpeaking(false) }
+    audio.play().catch(e => { console.error('play() failed:', e); setSpeaking(false) })
+  } catch (err) {
+    console.error('TTS error:', err)
+    setSpeaking(false)
+  }
 }
 
   // Send to Gemini
