@@ -38,7 +38,7 @@ app.post('/api/chat', async (req, res) => {
     const { messages, systemPrompt } = req.body
 
     const formatted = messages.map((m) => ({
-      role: m.role === 'model' ? 'assistant' : m.role,
+      role: (m.role === 'model' || m.role === 'assistant') ? 'assistant' : 'user',
       content: m.parts?.[0]?.text || m.content || '',
     }))
 

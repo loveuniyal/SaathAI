@@ -179,10 +179,16 @@ console.log('selected lang',selectedLang.name)
     const wakeTimer = setTimeout(() => setWakingUp(true), 6000)
 
     try {
-      const history = messages.map((m) => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.text }],
-      }))
+      // Build history from previous messages only (exclude last item = current user msg just added)
+      // Sarvam-M requires strict alternating user/assistant, starting with user
+      const prevMsgs = messages
+        .slice(0, -1)
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+      // Drop leading assistant messages and ensure it ends with assistant (for proper alternation)
+      const firstUserIdx = prevMsgs.findIndex((m) => m.role === 'user')
+      const trimmed = firstUserIdx >= 0 ? prevMsgs.slice(firstUserIdx) : []
+      // If last message in history is user (shouldn't happen), drop it to avoid user+user
+      const history = trimmed.at(-1)?.role === 'user' ? trimmed.slice(0, -1) : trimmed
 
       // Retry once on failure to handle Render cold start
       let response
@@ -193,7 +199,10 @@ console.log('selected lang',selectedLang.name)
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               systemPrompt: SYSTEM_PROMPT,
-              messages: [...history, { role: 'user', parts: [{ text: `[IMPORTANT: Reply only in ${selectedLang.name} language. Do not use any other language.] ${text}` }] }],
+              messages: [
+                ...history.map((m) => ({ role: m.role, parts: [{ text: m.text }] })),
+                { role: 'user', parts: [{ text: `[IMPORTANT: Reply only in ${selectedLang.name} language. Do not use any other language.] ${text}` }] }
+              ],
             }),
           })
           if (response.ok) break
