@@ -29,6 +29,7 @@ export default function Chat() {
   const [input, setInput] = useState('')
   const [listening, setListening] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [wakingUp, setWakingUp] = useState(false)
   const [selectedLang, setSelectedLang] = useState(languages[0])
   const [speaking, setSpeaking] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
@@ -174,20 +175,33 @@ console.log('selected lang',selectedLang.name)
     setInput('')
     setLoading(true)
 
+    // Show "waking up" hint after 6s (Render free tier cold start)
+    const wakeTimer = setTimeout(() => setWakingUp(true), 6000)
+
     try {
       const history = messages.map((m) => ({
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: m.text }],
       }))
 
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemPrompt: SYSTEM_PROMPT,
-          messages: [...history, { role: 'user', parts: [{ text: `[IMPORTANT: Reply only in ${selectedLang.name} language. Do not use any other language.] ${text}` }] }],
-        }),
-      })
+      // Retry once on failure to handle Render cold start
+      let response
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          response = await fetch(`${API_BASE_URL}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              systemPrompt: SYSTEM_PROMPT,
+              messages: [...history, { role: 'user', parts: [{ text: `[IMPORTANT: Reply only in ${selectedLang.name} language. Do not use any other language.] ${text}` }] }],
+            }),
+          })
+          if (response.ok) break
+        } catch (e) {
+          if (attempt === 1) throw e
+          await new Promise(r => setTimeout(r, 3000))
+        }
+      }
 
       const data = await response.json()
       const reply = data.reply || 'माफ़ कीजिए, मुझे समझ नहीं आया। कृपया दोबारा पूछें।'
@@ -197,6 +211,8 @@ console.log('selected lang',selectedLang.name)
     } catch (err) {
       setMessages((prev) => [...prev, { role: 'assistant', text: '⚠️ कुछ गलत हो गया। कृपया दोबारा कोशिश करें।' }])
     } finally {
+      clearTimeout(wakeTimer)
+      setWakingUp(false)
       setLoading(false)
     }
   }
@@ -287,11 +303,15 @@ console.log('selected lang',selectedLang.name)
                 स
               </div>
               <div className="bg-gray-800 px-4 py-3 rounded-2xl rounded-tl-none">
-                <div className="flex gap-1 items-center h-5">
-                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
+                {wakingUp ? (
+                  <p className="text-xs text-orange-400 animate-pulse">⏳ Server waking up... please wait (~15s)</p>
+                ) : (
+                  <div className="flex gap-1 items-center h-5">
+                    <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                )}
               </div>
             </div>
           </div>
